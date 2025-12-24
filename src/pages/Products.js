@@ -1,189 +1,68 @@
 // src/pages/Products.js
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import Sidebar from "../components/Sidebar";
 import { db } from "../firebase";
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
+import { collection, getDocs, addDoc } from "firebase/firestore";
 
 function Products() {
-  const navigate = useNavigate();
+  const [products, setProducts] = useState([]);
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [price, setPrice] = useState("");
-  const [products, setProducts] = useState([]);
 
   const productsCollection = collection(db, "products");
 
-  // Add new product
-  const handleAddProduct = async (e) => {
-    e.preventDefault();
-    if (!name || !quantity || !price) {
-      alert("All fields are required");
-      return;
-    }
-
-    await addDoc(productsCollection, {
-      name,
-      quantity: Number(quantity),
-      price: Number(price),
-    });
-
-    setName("");
-    setQuantity("");
-    setPrice("");
-    fetchProducts(); // refresh list
-  };
-
-  // Fetch products
   const fetchProducts = async () => {
     const data = await getDocs(productsCollection);
-    setProducts(data.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    setProducts(data.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   };
 
-  // Edit product
-  const handleEditProduct = async (product) => {
-    const newName = prompt("Enter new name:", product.name);
-    const newQty = prompt("Enter new quantity:", product.quantity);
-    const newPrice = prompt("Enter new price:", product.price);
-
-    if (newName && newQty && newPrice) {
-      const productDoc = doc(db, "products", product.id);
-      await updateDoc(productDoc, {
-        name: newName,
-        quantity: Number(newQty),
-        price: Number(newPrice),
-      });
-      fetchProducts(); // refresh list
-    }
-  };
-
-  // Delete product
-  const handleDeleteProduct = async (id) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      const productDoc = doc(db, "products", id);
-      await deleteDoc(productDoc);
-      fetchProducts(); // refresh list
-    }
-  };
-
-  useEffect(() => {
+  const handleAddProduct = async (e) => {
+    e.preventDefault();
+    if (!name || !quantity || !price) { alert("All fields required"); return; }
+    await addDoc(productsCollection, { name, quantity: Number(quantity), price: Number(price) });
+    setName(""); setQuantity(""); setPrice("");
     fetchProducts();
-  }, []);
-const inputStyle = {
-  padding: "10px",
-  margin: "5px",
-  borderRadius: "5px",
-  border: "1px solid #ccc",
-  width: "calc(100% - 22px)"
-};
+  };
 
-const addBtnStyle = {
-  padding: "10px 20px",
-  marginTop: "10px",
-  backgroundColor: "#4CAF50",
-  color: "#fff",
-  border: "none",
-  borderRadius: "5px",
-  cursor: "pointer"
-};
+  useEffect(() => { fetchProducts(); }, []);
 
-const editBtnStyle = {
-  padding: "5px 10px",
-  marginRight: "5px",
-  backgroundColor: "#2196F3",
-  color: "#fff",
-  border: "none",
-  borderRadius: "5px",
-  cursor: "pointer"
-};
-
-const deleteBtnStyle = {
-  padding: "5px 10px",
-  backgroundColor: "#f44336",
-  color: "#fff",
-  border: "none",
-  borderRadius: "5px",
-  cursor: "pointer"
-};
-
-const backBtnStyle = {
-  marginTop: "20px",
-  padding: "10px 20px",
-  backgroundColor: "#555",
-  color: "#fff",
-  border: "none",
-  borderRadius: "5px",
-  cursor: "pointer"
-};
+  const inputStyle = { padding: "10px", margin: "5px", width: "150px", borderRadius: "5px", border: "1px solid #ccc" };
+  const btnStyle = { padding: "10px 20px", marginLeft: "5px", background: "#1976D2", color: "#fff", border: "none", borderRadius: "5px" };
 
   return (
-  <div style={{
-    maxWidth: "600px",
-    margin: "50px auto",
-    padding: "20px",
-    boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-    borderRadius: "10px",
-    textAlign: "center",
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    backgroundColor: "#f9f9f9"
-  }}>
-    <h1 style={{ color: "#333", marginBottom: "20px" }}>Products</h1>
+    <div style={{ display: "flex" }}>
+      <Sidebar />
+      <div style={{ marginLeft: "220px", padding: "30px", width: "100%" }}>
+        <h1 style={{ color: "#1976D2" }}>Products</h1>
+        <form onSubmit={handleAddProduct} style={{ marginBottom: "20px" }}>
+          <input style={inputStyle} placeholder="Name" value={name} onChange={e => setName(e.target.value)} />
+          <input style={inputStyle} type="number" placeholder="Quantity" value={quantity} onChange={e => setQuantity(e.target.value)} />
+          <input style={inputStyle} type="number" placeholder="Price" value={price} onChange={e => setPrice(e.target.value)} />
+          <button style={btnStyle} type="submit">Add</button>
+        </form>
 
-    <form onSubmit={handleAddProduct} style={{ marginBottom: "30px" }}>
-      <input
-        type="text"
-        placeholder="Product Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={inputStyle}
-      />
-      <input
-        type="number"
-        placeholder="Quantity"
-        value={quantity}
-        onChange={(e) => setQuantity(e.target.value)}
-        style={inputStyle}
-      />
-      <input
-        type="number"
-        placeholder="Price"
-        value={price}
-        onChange={(e) => setPrice(e.target.value)}
-        style={inputStyle}
-      />
-      <button type="submit" style={addBtnStyle}>Add Product</button>
-    </form>
-
-    <h2 style={{ color: "#555" }}>Products List</h2>
-    <ul style={{ listStyle: "none", padding: 0 }}>
-      {products.map((p) => (
-        <li key={p.id} style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          backgroundColor: "#fff",
-          padding: "10px",
-          margin: "10px 0",
-          borderRadius: "5px",
-          boxShadow: "0 2px 5px rgba(0,0,0,0.1)"
-        }}>
-          <span>{p.name} - Qty: {p.quantity} - Price: ₹{p.price}</span>
-          <div>
-            <button onClick={() => handleEditProduct(p)} style={editBtnStyle}>Edit</button>
-            <button onClick={() => handleDeleteProduct(p.id)} style={deleteBtnStyle}>Delete</button>
-          </div>
-        </li>
-      ))}
-    </ul>
-
-    <button
-      onClick={() => navigate("/dashboard")}
-      style={backBtnStyle}
-    >
-      Back to Dashboard
-    </button>
-  </div>
-);
-
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "#1976D2", color: "#fff" }}>
+              <th style={{ padding: "10px", border: "1px solid #ccc" }}>Name</th>
+              <th style={{ padding: "10px", border: "1px solid #ccc" }}>Quantity</th>
+              <th style={{ padding: "10px", border: "1px solid #ccc" }}>Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map(p => (
+              <tr key={p.id}>
+                <td style={{ padding: "10px", border: "1px solid #ccc" }}>{p.name}</td>
+                <td style={{ padding: "10px", border: "1px solid #ccc" }}>{p.quantity}</td>
+                <td style={{ padding: "10px", border: "1px solid #ccc" }}>₹{p.price}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 export default Products;
